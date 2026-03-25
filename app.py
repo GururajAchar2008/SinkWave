@@ -28,7 +28,8 @@ DB_CONFIG = {
     'password': os.getenv('DB_PASSWORD'),
     'database': os.getenv('DB_NAME'),
     'ssl_ca': './ca.pem',          # Important for Aiven
-    'ssl_verify_cert': True
+    'ssl_verify_cert': True,
+    'connect_timeout': 30
 }
 
 # Production settings
@@ -36,10 +37,16 @@ app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 
 def get_db():
-    config = DB_CONFIG.copy()
-    if 'ssl_ca' in config and os.path.exists(config['ssl_ca']):
-        config['ssl'] = {'ca': config['ssl_ca']}
-    return mysql.connector.connect(**{k: v for k, v in config.items() if k != 'ssl_ca'})
+    try:
+        config = DB_CONFIG.copy()
+        if os.path.exists(config.get('ssl_ca', '')):
+            config['ssl'] = {'ca': config['ssl_ca']}
+        
+        conn = mysql.connector.connect(**{k: v for k, v in config.items() if k != 'ssl_ca'})
+        return conn
+    except mysql.connector.Error as err:
+        print("Database Connection Error:", err)   # This will appear in Render Logs
+        raise  # Re-raise so we can see the real error
 
 
 def allowed_file(filename):
