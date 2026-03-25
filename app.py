@@ -8,7 +8,7 @@ import uuid
 from functools import wraps
 
 app = Flask(__name__)
-app.secret_key = '2318428345dh9j2xkuwekbyrg8764brtcuyasgdfcn278645chjaksduftndh465r2873h4ttr6cb2q84hisj2634589s72314nbrc8i234t9867rxtn2197364t5c926b3n4t5i7n6xt876345n9bqtefyyuinc23249231764ncx48735j556R*!@^#$NYTD!@*^#$%RB*^BTBN^*&^$BVR GEFBV*@^!%#$R*&BG^EFB*!@^$%YWGE'
+app.secret_key = os.getenv('SECRET_KEY')
 
 # Enable CORS so frontend can run on a separate port/server (e.g. live-server on 8080 while backend on 5000)
 CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
