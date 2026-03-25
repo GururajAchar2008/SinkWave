@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SinkWave {{ channel.name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel = "icon" href = "../static/images/logo.png" type = "image/png">
+  <!-- Axios CDN for API calls -->
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+
+  <!-- TOP NAV -->
+  <nav class="topnav">
+    <div class="topnav-left">
+      <a href="{{ url_for('dashboard') }}" class="btn btn-ghost btn-sm back-btn">← Back</a>
+      <span class="nav-sep">|</span>
+      <span class="nav-icon">📂</span>
+      <span class="nav-brand">{{ channel.name }}</span>
+      <span class="channel-badge {{ 'badge-public' if channel.is_public else 'badge-private' }}">
+        {{ '🌐 Public' if channel.is_public else '🔒 Private' }}
+      </span>
+    </div>
+    <div class="topnav-right">
+      <span class="nav-user">
+        👤 {{ username }}
+        {% if role == 'admin' %}<span class="role-badge">Admin</span>{% endif %}
+      </span>
+      <a href="{{ url_for('logout') }}" class="btn btn-ghost btn-sm">Sign out</a>
+    </div>
+  </nav>
+
+  <!-- CHANNEL LAYOUT -->
+  <div class="channel-layout">
+
+    <!-- LEFT: CHANNEL SIDEBAR -->
+    <aside class="channel-sidebar">
+      <div class="ch-info-block">
+        <div class="ch-code-label">Channel Code</div>
+        <div class="ch-code-value" id="ch-code-val">{{ channel.channel_code }}</div>
+        <button class="btn btn-ghost btn-xs" onclick="copyChannelCode()">📋 Copy</button>
+      </div>
+
+      <nav class="ch-nav">
+        <button class="ch-nav-item active" onclick="switchChTab('documents', this)">
+          📄 Documents
+        </button>
+        {% if role == 'admin' %}
+        <button class="ch-nav-item" onclick="switchChTab('members', this)">
+          👥 Members
+        </button>
+        {% if not channel.is_public %}
+        <button class="ch-nav-item" onclick="switchChTab('requests', this)" id="req-tab-btn">
+          📥 Join Requests <span id="req-badge" class="req-count"></span>
+        </button>
+        {% endif %}
+        {% endif %}
+        <!-- NEW: Exit Channel (visible to all members) -->
+        <button class="ch-nav-item" onclick="leaveChannel()" style="color: var(--danger); margin-top: auto;">
+          🚪 Exit Channel
+        </button>
+      </nav>
+    </aside>
+
+    <!-- RIGHT: CONTENT PANELS -->
+    <main class="channel-main">
+
+      <!-- ── DOCUMENTS PANEL ── -->
+      <div id="ch-tab-documents" class="ch-pane active">
+        <div class="pane-header">
+          <div>
+            <h2 class="pane-title">Documents</h2>
+            <p class="pane-sub">All files shared in this channel</p>
+          </div>
+          {% if role == 'admin' %}
+          <button class="btn btn-primary btn-sm" onclick="openUploadModal()">
+            ⬆️ Upload File
+          </button>
+          {% endif %}
+        </div>
+
+        <div id="doc-list" class="doc-list">
+          <div class="loading-state">Loading documents…</div>
+        </div>
+      </div>
+
+      <!-- ── MEMBERS PANEL (admin only) ── -->
+      {% if role == 'admin' %}
+      <div id="ch-tab-members" class="ch-pane">
+        <div class="pane-header">
+          <div>
+            <h2 class="pane-title">Members</h2>
+            <p class="pane-sub">All people in this channel</p>
+          </div>
+        </div>
+        <div id="members-list" class="members-list">
+          <div class="loading-state">Loading members…</div>
+        </div>
+      </div>
+
+      <!-- ── JOIN REQUESTS PANEL (admin + private) ── -->
+      {% if not channel.is_public %}
+      <div id="ch-tab-requests" class="ch-pane">
+        <div class="pane-header">
+          <div>
+            <h2 class="pane-title">Join Requests</h2>
+            <p class="pane-sub">Pending requests to join this channel</p>
+          </div>
+        </div>
+        <div id="requests-list" class="members-list">
+          <div class="loading-state">Loading requests…</div>
+        </div>
+      </div>
+      {% endif %}
+      {% endif %}
+
+    </main>
+  </div>
+
+  <!-- UPLOAD MODAL -->
+  {% if role == 'admin' %}
+  <div id="upload-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Upload Document</h3>
+        <button class="modal-close" onclick="closeUploadModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="upload-alert"></div>
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+          <div class="dz-icon">📁</div>
+          <p class="dz-text">Click to browse or drag &amp; drop</p>
+          <p class="dz-hint">PDF, Word, Excel, PowerPoint, TXT, images and more</p>
+          <input type="file" id="file-input" style="display:none" onchange="fileSelected(this)" />
+        </div>
+        <div id="file-preview" style="display:none;" class="file-preview"></div>
+        <div class="form-group" style="margin-top:1rem;">
+          <label class="form-label">Description <span class="opt">(optional)</span></label>
+          <input class="form-input" id="upload-desc" type="text" placeholder="Brief description of this file" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeUploadModal()">Cancel</button>
+        <button class="btn btn-primary" id="upload-btn" onclick="uploadFile()">Upload</button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- TOAST -->
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // Global constants from Flask render
+    const CHANNEL_ID = {{ channel.id }};
+    const USER_ROLE  = '{{ role }}';
+    const IS_PUBLIC  = {{ 'true' if channel.is_public else 'false' }};
+    const USER_ID    = {{ user_id }};
+
+    // Axios config for separate frontend/backend (works with same-origin or CORS)
+    axios.defaults.withCredentials = true;
+  </script>
+  <script src="{{ url_for('static', filename='js/channel.js') }}"></script>
+</body>
+</html>

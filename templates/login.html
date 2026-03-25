@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SinkWave — Login</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link rel="icon" href="../static/images/logo.png" type="image/png" />
+  </head>
+  <body class="auth-page">
+    <div class="auth-wrapper">
+      <div class="auth-brand">
+        <div class="brand-icon">
+          <img src="../static/images/logo.png" alt="logo" />
+        </div>
+        <h1 class="brand-name">SinkWave</h1>
+        <p class="brand-tagline">Your unified document workspace</p>
+      </div>
+
+      <div class="auth-card">
+        <h2 class="auth-title">Welcome back</h2>
+
+        <p class="auth-subtitle">Sign in to your account</p>
+        {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+        {% endif %} {% if request.args.get('registered') %}
+        <div class="alert alert-success">Account created! Please sign in.</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('login') }}">
+          <div class="form-group">
+            <label class="form-label">Email address</label>
+            <input
+              class="form-input"
+              type="email"
+              name="email"
+              placeholder="you@example.com"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input
+              class="form-input"
+              type="password"
+              name="password"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          <button class="btn btn-primary btn-full" type="submit">
+            Sign In
+          </button>
+        </form>
+
+        <p class="auth-switch">
+          Don't have an account?
+          <a href="{{ url_for('register') }}">Create one</a>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

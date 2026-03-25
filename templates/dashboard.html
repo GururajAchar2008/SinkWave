@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SynkWave — Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link rel="icon" href="../static/images/logo.png" type="image/png" />
+    <!-- Axios CDN for API calls -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  </head>
+  <body>
+    <!-- TOP NAV -->
+    <nav class="topnav">
+      <div class="topnav-left">
+        <span class="nav-icon">📂</span>
+        <span class="nav-brand">SinkWave</span>
+      </div>
+      <div class="topnav-right">
+        <span class="nav-user">👤 {{ username }}</span>
+        <a href="{{ url_for('logout') }}" class="btn btn-ghost btn-sm"
+          >Sign out</a
+        >
+      </div>
+    </nav>
+
+    <!-- MAIN LAYOUT -->
+    <div class="app-layout">
+      <!-- SIDEBAR TABS -->
+      <aside class="sidebar">
+        <button
+          class="sidebar-item active"
+          onclick="switchTab('my-channels', this)"
+        >
+          <span class="si-icon">🗂️</span>
+          <span class="si-label">My Channels</span>
+        </button>
+        <button
+          class="sidebar-item"
+          onclick="switchTab('search-channels', this)"
+        >
+          <span class="si-icon">🔍</span>
+          <span class="si-label">Search Channels</span>
+        </button>
+        <button
+          class="sidebar-item"
+          onclick="switchTab('create-channel', this)"
+        >
+          <span class="si-icon">➕</span>
+          <span class="si-label">Create Channel</span>
+        </button>
+      </aside>
+
+      <!-- CONTENT AREA -->
+      <main class="content-area">
+        <!-- ── TAB 1: MY CHANNELS ── -->
+        <section id="tab-my-channels" class="tab-pane active">
+          <div class="section-header">
+            <h2 class="section-title">My Channels</h2>
+            <p class="section-sub">Channels you have joined or created</p>
+          </div>
+          <div id="my-channels-list" class="channels-grid">
+            <div class="loading-state">Loading channels…</div>
+          </div>
+        </section>
+
+        <!-- ── TAB 2: SEARCH CHANNELS ── -->
+        <section id="tab-search-channels" class="tab-pane">
+          <div class="section-header">
+            <h2 class="section-title">Search Channels</h2>
+            <p class="section-sub">
+              Find by channel code <strong>or name</strong>
+            </p>
+          </div>
+
+          <div class="search-box-wrap">
+            <input
+              id="search-code-input"
+              class="form-input search-code-input"
+              type="text"
+              placeholder="Enter channel code or name (e.g. A3F9B2C1 or Marketing)"
+              maxlength="50"
+            />
+            <button class="btn btn-primary" onclick="searchChannel()">
+              Search
+            </button>
+          </div>
+
+          <div id="search-result" class="search-result-area"></div>
+        </section>
+
+        <!-- ── TAB 3: CREATE CHANNEL ── -->
+        <section id="tab-create-channel" class="tab-pane">
+          <div class="section-header">
+            <h2 class="section-title">Create Channel</h2>
+            <p class="section-sub">Set up a new document channel</p>
+          </div>
+
+          <div class="form-card">
+            <div id="create-alert"></div>
+
+            <div class="form-group">
+              <label class="form-label"
+                >Channel name <span class="req">*</span></label
+              >
+              <input
+                class="form-input"
+                id="ch-name"
+                type="text"
+                placeholder="e.g. Q3 Finance Reports"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"
+                >Max members <span class="opt">(optional)</span></label
+              >
+              <input
+                class="form-input"
+                id="ch-max"
+                type="number"
+                placeholder="Leave blank for unlimited"
+                min="2"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Visibility</label>
+              <div class="radio-group">
+                <label class="radio-option">
+                  <input
+                    type="radio"
+                    name="visibility"
+                    value="public"
+                    checked
+                  />
+                  <span class="radio-box">
+                    <span class="radio-title">🌐 Public</span>
+                    <span class="radio-desc"
+                      >Anyone with the code can join instantly</span
+                    >
+                  </span>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="visibility" value="private" />
+                  <span class="radio-box">
+                    <span class="radio-title">🔒 Private</span>
+                    <span class="radio-desc"
+                      >Members need admin approval to join</span
+                    >
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="createChannel()">
+              Create Channel
+            </button>
+          </div>
+
+          <!-- Success Banner (hidden until created) -->
+          <div
+            id="create-success"
+            class="create-success-banner"
+            style="display: none"
+          >
+            <div class="success-icon">🎉</div>
+            <h3>Channel created!</h3>
+            <p>Share this code with your team:</p>
+            <div class="channel-code-display" id="new-channel-code">—</div>
+            <div class="success-actions">
+              <button class="btn btn-outline" onclick="copyCode()">
+                📋 Copy Code
+              </button>
+              <button class="btn btn-primary" id="go-channel-btn">
+                Open Channel →
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+      // Axios config for separate frontend/backend
+      axios.defaults.withCredentials = true;
+    </script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+  </body>
+</html>
