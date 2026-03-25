@@ -27,26 +27,39 @@ DB_CONFIG = {
     'user': os.getenv('DB_USER'),
     'password': os.getenv('DB_PASSWORD'),
     'database': os.getenv('DB_NAME'),
-    'ssl_ca': './ca.pem',          # Important for Aiven
+    'ssl_ca': './ca.pem',
     'ssl_verify_cert': True,
     'connect_timeout': 30
 }
+
+def get_db():
+    try:
+        config = DB_CONFIG.copy()
+        
+        # Proper way to pass SSL for mysql-connector-python
+        if os.path.exists(config.get('ssl_ca', '')):
+            config['ssl'] = {
+                'ca': config['ssl_ca'],
+                'verify_cert': True
+            }
+        
+        # Remove keys that mysql connector doesn't like in older versions
+        config.pop('ssl_ca', None)
+        config.pop('ssl_verify_cert', None)
+
+        conn = mysql.connector.connect(**config)
+        return conn
+        
+    except Exception as e:
+        print("=== DATABASE CONNECTION ERROR ===")
+        print(f"Error: {e}")
+        print("Check if ca.pem exists and DB credentials are correct.")
+        raise
 
 # Production settings
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 
-def get_db():
-    try:
-        config = DB_CONFIG.copy()
-        if os.path.exists(config.get('ssl_ca', '')):
-            config['ssl'] = {'ca': config['ssl_ca']}
-        
-        conn = mysql.connector.connect(**{k: v for k, v in config.items() if k != 'ssl_ca'})
-        return conn
-    except mysql.connector.Error as err:
-        print("Database Connection Error:", err)   # This will appear in Render Logs
-        raise  # Re-raise so we can see the real error
 
 
 def allowed_file(filename):
