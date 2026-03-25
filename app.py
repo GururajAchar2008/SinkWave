@@ -31,17 +31,24 @@ DB_CONFIG = {
     'connect_timeout': 30
 }
 
-# Temporary test version (disable SSL)
 def get_db():
-    config = {
-        'host': os.getenv('DB_HOST'),
-        'port': int(os.getenv('DB_PORT', 25060)),
-        'user': os.getenv('DB_USER'),
-        'password': os.getenv('DB_PASSWORD'),
-        'database': os.getenv('DB_NAME'),
-        'connect_timeout': 30
-    }
-    return mysql.connector.connect(**config)
+    try:
+        config = DB_CONFIG.copy()
+        
+        # This is the correct way for most versions of mysql-connector-python with Aiven
+        if os.path.exists(config.get('ssl_ca', '')):
+            config['ssl_verify_cert'] = True
+            config['ssl_ca'] = config['ssl_ca']   # Keep it as string path
+        
+        conn = mysql.connector.connect(**config)
+        return conn
+        
+    except Exception as e:
+        print("=== DATABASE CONNECTION ERROR ===")
+        print(f"Error Type: {type(e).__name__}")
+        print(f"Error Message: {e}")
+        print("Check: ca.pem exists? DB credentials correct? Database exists?")
+        raise
 
 # Production settings
 app.config['SESSION_COOKIE_SECURE'] = True
