@@ -103,25 +103,38 @@ def login():
 def register():
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
+    
     error = None
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         email    = request.form.get('email', '').strip()
         password = request.form.get('password', '')
+
         if not username or not email or not password:
             error = 'All fields are required.'
         else:
-            db = get_db(); cur = db.cursor(dictionary=True)
-            cur.execute('SELECT id FROM users WHERE email = %s OR username = %s', (email, username))
-            if cur.fetchone():
-                error = 'Email or username already taken.'
-            else:
-                cur.execute('INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)',
-                            (username, email, generate_password_hash(password)))
-                db.commit()
-                cur.close(); db.close()
-                return redirect(url_for('login', registered=1))
-            cur.close(); db.close()
+            try:
+                db = get_db()
+                cur = db.cursor(dictionary=True)
+                
+                cur.execute('SELECT id FROM users WHERE email = %s OR username = %s', 
+                           (email, username))
+                if cur.fetchone():
+                    error = 'Email or username already taken.'
+                else:
+                    cur.execute('INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)',
+                                (username, email, generate_password_hash(password)))
+                    db.commit()
+                    cur.close()
+                    db.close()
+                    return redirect(url_for('login', registered=1))
+                
+                cur.close()
+                db.close()
+            except Exception as e:
+                print("Register Error:", str(e))
+                error = 'Database connection error. Please try again later.'
+    
     return render_template('register.html', error=error)
 
 @app.route('/logout')
